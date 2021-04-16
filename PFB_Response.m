@@ -9,23 +9,41 @@ P = 40;
 
 L = M*R*P;
 N = M*R-1;
-Fc = 1/M; % 截止频率=pi/32
-% Fp = 1/16;
-% Fst = 1/32;
-% Ap = 1;
-% Astop = 40;
-Hf = fdesign.lowpass('N,Fc',N,Fc);
-% Hf = fdesign.lowpass('Fp,Fst,Ap,Ast');
-Hd2 = design(Hf,'window','window',{@chebwin,50}, ...
-            'systemobject',true);
-% hfvt = fvtool(Hd2,'Color','White');
-h = Hd2.Numerator;
 %%
-%画出最大抽取和过采样的滤波器响应
+% 设计滤波器
+Fp = 1/M;
+Fst = 2/M;
+f = [0 Fp Fst 1];
+a = [1 1 0 0];
+b = firpm(N,f,a);
+%%
+het1=exp(1i*2*pi*(0:N)*Fst);
+het2=exp(1i*2*pi*(0:N)*(-Fst));
+het3=exp(1i*2*pi*(0:N)*(2*Fst));
+b1 = b.*het1;
+b2 = b.*het2;
+b3 = b.*het3;
 r=1;
 figure(r);r=r+1;
-plot((-0.5:1/2048:.5-1/2048)*M,fftshift(20*log10(abs(fft(h,2048)))),'b')
+plot((-0.5:1/2048:.5-1/2048),fftshift(20*log10(abs(fft(b,2048)))),'b')
+hold on
+plot((-0.5:1/2048:.5-1/2048),fftshift(20*log10(abs(fft(b1,2048)))),'r')
+hold on
+plot((-0.5:1/2048:.5-1/2048),fftshift(20*log10(abs(fft(b2,2048)))),'k')
+hold on
+plot((-0.5:1/2048:.5-1/2048),fftshift(20*log10(abs(fft(b3,2048)))),'g')
 grid on
+% Ap = 1;
+% Astop = 40;
+% Hf = fdesign.lowpass('N,Fc',N,Fc);
+% % Hf = fdesign.lowpass('Fp,Fst,Ap,Ast');
+% Hd2 = design(Hf,'window','window',{@chebwin,50}, ...
+%             'systemobject',true);
+% % hfvt = fvtool(Hd2,'Color','White');
+% h = Hd2.Numerator;
+
+%%
+
 
 %%
 
