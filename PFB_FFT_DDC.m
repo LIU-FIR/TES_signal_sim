@@ -15,36 +15,39 @@ Fp = 1/M;
 Fst = 2/M;
 f = [0 Fp Fst 1];
 a = [1 1 0 0];
-b = firpm(N,f,a);
+h = firpm(N,f,a);
+disp('firpm filter is done')
 %%
 het1=exp(1i*2*pi*(0:N)*Fst);
 het2=exp(1i*2*pi*(0:N)*(-Fst));
-b1 = b.*het1;
-b2 = b.*het2;
+h1 = h.*het1;
+h2 = h.*het2;
 r=1;
 figure(r);r=r+1;
-plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(b,16384)))),'b')
-hold on
-plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(b1,16384)))),'r')
-hold on
-plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(b2,16384)))),'k')
-xlim([-0.005 0.005])
+plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h,16384)))),'b')
+% hold on
+% plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h1,16384)))),'r')
+% hold on
+% plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h2,16384)))),'k')
+% xlim([-0.005 0.005])
+xlim([-B/pi B/pi])
 grid on
 %%
-K = 1; % 设定选定子带的序号，K=0,1,2...
+K = 3; % 设定选定子带的序号，K=0,1,2...
 B = 2*pi/M;
-w0 = B + (K-1)*2*pi/M; % 第K个子带的中心频率
+w0 = 1*B; % 第K个子带的中心频率
 % w1 = pi/64+3*B;
-w1 = w0+5*B/64;
+w1 = w0+5*B/64;  % 在第K个子带内设定两个偏移中心频率
 w2 = w0-B/64;
-x = exp(1i*w0*(0:L-1))+1.5*exp(1i*w1*(0:L-1))+4*exp(1i*w2*(0:L-1));
-
-y_fir = pfb_fir(x,h,M,R);
+% x = exp(1i*w0*(0:L-1))+1.5*exp(1i*w1*(0:L-1))+4*exp(1i*w2*(0:L-1)); % 第K个子带内模拟信号
+x = exp(1i*w1*(0:L-1));
+y_fir = pfb_fir(x,h,M,R,1,1); % oversampled_PFB，过采样率为8/5
 %%
-int_num = 1; % 设定子带功率的积分帧数
-y_psd_mean = pfb_psd_mean(y_fir,int_num);
+tp= 10*R;
+y = pfb_fft(y_fir);
 figure(1)
-stem((0:M-1),y_psd_mean(:,1),'s--', 'MarkerSize',5,'MarkerFaceColor','k')
+stem((0:M-1),abs(y(:,tp)),'s--', 'MarkerSize',5,'MarkerFaceColor','k')
+xlim([0 10])
 xlabel('channel')
 ylabel('channle power: arbitary unit')
 grid on
