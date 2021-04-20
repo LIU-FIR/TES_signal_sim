@@ -21,7 +21,7 @@ Fc = 1/M; % 截止频率对应的归一化频率
 % f = [0 Fp Fst 1];
 % a = [1 1 0 0];
 % h = firpm(N,f,a);
-h = fir1(N,Fc,'low',kaiser(N+1,5));
+h = fir1(N,Fc,'low',kaiser(N+1,2.5));
 %%
 het1=exp(1i*2*pi*(0:N)*Fsh);
 het2=exp(1i*2*pi*(0:N)*(-Fsh));
@@ -29,23 +29,23 @@ h1 = h.*het1;
 h2 = h.*het2;
 r=1;
 figure(r);r=r+1;
-plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h,16384)))),'b')
+plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h)))),'b')
 hold on
-plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h1,16384)))),'r')
-% hold on
-% plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h2,16384)))),'k')
+plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h1)))),'r')
+hold on
+plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h2)))),'k')
 % xlim([-0.005 0.005])
 xlim(20*Bf)
 grid on
 %%
-fs = 4e9;
-K = 5; % 设定选定子带的序号，K=0,1,2...
-P = 64;
+fs = 4e9; % ADC采样率为4G/s
+K = 5; % 设定选定子带的序号，K=0,1,2...4095
+P = 64; % 第二级FFT的点数
 Df = fs/M;
 B = 2*pi/M;
-% A = 8;
-% A = 2;
-A = 4;
+A = 8; % 测试过采样率为8/5*fs/M
+% A = 2; % 测试过采样率为2*fs/M
+% A = 4; % 测试过采样率为4/3*fs/M
 fA = K*Df+A*Df/P;
 wA = 2*pi*fA/fs;
 % w0 = K*B; % 第K个子带的中心频率
@@ -56,9 +56,9 @@ wA = 2*pi*fA/fs;
 x = exp(1i*wA*(0:L-1));
 
 
-% p=1;q=1;
+p=8;q=5;
 % y_fir = pfb_fir(x,h,M,R,8,5); % oversampled_PFB，过采样率为P/Q
-y_fir = pfb_fir(x,h,M,R,4,3); % oversampled_PFB，过采样率为P/Q
+y_fir = pfb_fir(x,h,M,R,p,q); % oversampled_PFB，过采样率为P/Q
 %%
 tp= 10*R;
 y = pfb_fft(y_fir);
@@ -88,8 +88,9 @@ grid on
 % plot(fshift,fftshift(mag_y_sp),'*')
 %%
 % DDC数字下变频
-t = 0:size(y_fir,2)-1;
-y_ddc = y_fir(K+1,:).*exp(-1i*w1*t*M); %下变频的数字频率由于子带每隔M*Ts出一个值，因此相位变化为：w*M*Ts
+t = (0:size(y,2)-1); %
+fLO = 2*pi*q/p*A/P;
+y_ddc = y(K+1,:).*exp(-1i*fLO*t); %下变频的数字频率由于子带每隔q/p*M*Ts出一个值，因此相位变化为：w*M*Ts
 y_ddc_sp = fft(y_ddc(1:P));
 mag_y_ddc_sp = abs(y_ddc_sp);
 figure(3)
