@@ -1,5 +1,5 @@
 %%
-% Polyphase Filter Bank: PFB的Matlab实现
+% Polyphase Filter Bank: Oversampled PFB的Matlab实现
 % PFB后加FFT以及PFB后加数字下变频滤波取出所需信号
 %%
 clear; clc;
@@ -10,38 +10,55 @@ W = 20;%
 
 L = M*R*W;
 N = M*R-1;
-% 设计滤波器
-Fp = 1/M;
-Fst = 2/M;
-f = [0 Fp Fst 1];
-a = [1 1 0 0];
-h = firpm(N,f,a);
-disp('firpm filter is done')
+
+
 %%
-het1=exp(1i*2*pi*(0:N)*Fst);
-het2=exp(1i*2*pi*(0:N)*(-Fst));
+% 设计滤波器
+Fp = 1/M; % 最大抽取率对应的归一化频率，滤波器带宽
+Fsh = 1.6/M; % 过采样率对应的归一化频率
+Bf = [-1/M/2 1/M/2]; 
+Fc = 1/M; % 截止频率对应的归一化频率
+% f = [0 Fp Fst 1];
+% a = [1 1 0 0];
+% h = firpm(N,f,a);
+h = fir1(N,Fc,'low',kaiser(N+1,5));
+%%
+het1=exp(1i*2*pi*(0:N)*Fsh);
+het2=exp(1i*2*pi*(0:N)*(-Fsh));
 h1 = h.*het1;
 h2 = h.*het2;
 r=1;
 figure(r);r=r+1;
 plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h,16384)))),'b')
-% hold on
-% plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h1,16384)))),'r')
+hold on
+plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h1,16384)))),'r')
 % hold on
 % plot((-0.5:1/16384:.5-1/16384),fftshift(20*log10(abs(fft(h2,16384)))),'k')
 % xlim([-0.005 0.005])
-xlim([-B/pi B/pi])
+xlim(20*Bf)
 grid on
 %%
-K = 3; % 设定选定子带的序号，K=0,1,2...
+fs = 4e9;
+K = 5; % 设定选定子带的序号，K=0,1,2...
+P = 64;
+Df = fs/M;
 B = 2*pi/M;
-w0 = 1*B; % 第K个子带的中心频率
-% w1 = pi/64+3*B;
-w1 = w0+5*B/64;  % 在第K个子带内设定两个偏移中心频率
-w2 = w0-B/64;
+% A = 8;
+% A = 2;
+A = 4;
+fA = K*Df+A*Df/P;
+wA = 2*pi*fA/fs;
+% w0 = K*B; % 第K个子带的中心频率
+% % w1 = pi/64+3*B;
+% w1 = w0+5*B/64;  % 在第K个子带内设定两个偏移中心频率
+% w2 = w0-B/64;
 % x = exp(1i*w0*(0:L-1))+1.5*exp(1i*w1*(0:L-1))+4*exp(1i*w2*(0:L-1)); % 第K个子带内模拟信号
-x = exp(1i*w1*(0:L-1));
-y_fir = pfb_fir(x,h,M,R,1,1); % oversampled_PFB，过采样率为8/5
+x = exp(1i*wA*(0:L-1));
+
+
+% p=1;q=1;
+% y_fir = pfb_fir(x,h,M,R,8,5); % oversampled_PFB，过采样率为P/Q
+y_fir = pfb_fir(x,h,M,R,4,3); % oversampled_PFB，过采样率为P/Q
 %%
 tp= 10*R;
 y = pfb_fft(y_fir);
@@ -54,12 +71,12 @@ grid on
 
 %%
 % 选择第K个通道子带，做FFT谱分析
-P = 64;
+
 df = B/P/pi; % 数字频率分辨率
-chan = 2;
+chan = K+1;
 f = (0:P-1)*df; % 数字频率轴
 fshift = (-P/2:P/2-1)*df;% 以0为中心的数字频率轴
-y_sp = fft(y_fir(chan,1:P));
+y_sp = fft(y(chan,1:P));
 mag_y_sp = abs(y_sp);
 figure(2)
 % stem(fshift,fftshift(mag_y_sp),'^--', 'MarkerSize',3,'MarkerFaceColor','b')
