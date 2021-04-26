@@ -28,13 +28,18 @@ het2=exp(1i*2*pi*(0:N)*(-Fsh));
 h1 = h.*het1;
 h2 = h.*het2;
 figure(1)
+subplot(2,1,1)
 plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h)))),'b')
-hold on
-plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h1)))),'r')
-hold on
-plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h2)))),'k')
+xlim(10*Bf)
+grid on
+% hold on
+% plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h1)))),'r')
+% hold on
+% plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h2)))),'k')
 % xlim([-0.005 0.005])
-xlim(20*Bf)
+
+subplot(2,1,2)
+plot((-0.5:1/16384:.5-1/16384),fftshift(db(abs(fft(h)))),'b')
 grid on
 %%
 fs = 4e9; % ADC采样率为4G/s
@@ -43,9 +48,11 @@ P = 64; % 第二级FFT的点数
 Df = fs/M;
 B = 2*pi/M;
 
-% A = 2; % 测试过采样率为2*fs/M
-% A = 4; % 测试过采样率为4/3*fs/M
-A = 8; % 测试过采样率为8/5*fs/M
+A = 8; % 给定子带内偏移频率
+tst_mode = 4;
+% tst_mode = 2; % 测试过采样率为2*fs/M
+% tst_mode = 3; % 测试过采样率为4/3*fs/M
+%tst_mode = 4; % 测试过采样率为8/5*fs/M
 fA = K*Df+A*Df/P;
 wA = 2*pi*fA/fs;
 % w0 = K*B; % 第K个子带的中心频率
@@ -55,12 +62,14 @@ wA = 2*pi*fA/fs;
 % x = exp(1i*w0*(0:L-1))+1.5*exp(1i*w1*(0:L-1))+4*exp(1i*w2*(0:L-1)); % 第K个子带内模拟信号
 x = exp(1i*wA*(0:L-1));
 
-if A == 8
-    p=8;q=5;
-elseif A ==4
-    p=4;q=3;
-elseif A ==2
+if tst_mode == 1
+    p=1;q=1;
+elseif tst_mode ==2
     p=2;q=1;
+elseif tst_mode ==3
+    p=4;q=3;
+elseif tst_mode==4
+    p=8;q=5;
 end
 y_fir = pfb_fir(x,h,M,R,p,q); % oversampled_PFB，过采样率为p/q
 %%
@@ -78,7 +87,8 @@ grid on
 fs1 = fs/M*p/q;
 df = B/P/pi; % 数字频率分辨率
 chan = K+1;
-fk = (-P/2:P/2-1)*fs1/P; % 数字频率轴
+% fk = (-P/2:P/2-1)*fs1/P; % 数字频率轴
+fk = (-P/2:P/2-1); % 数字频率索引轴
 fshift = (-P/2:P/2-1)*df;% 以0为中心的数字频率轴
 yk = y(chan,:);
 yk_sp = fft(y(chan,1:P));
